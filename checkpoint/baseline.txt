@@ -1,0 +1,41 @@
+# How Accurate Is Hourly Bike Sharing Demand Estimation?
+
+## Group
+ESE_5420_112: Jinge, Shuo, Yujie
+
+## Changes since the proposal
+Following the feedback: the main answer is the rush-hour test RMSE difference, kNN minus OLS, with a 95% interval; we added OLS + hour x working-day interaction and widened the kNN grid. k is now chosen by time-ordered CV, not one validation split.
+
+## Data
+UCI Bike Sharing hour.csv (Washington, D.C., 2011-2012; CC BY 4.0): N = 17,379 hourly rows. Output: cnt (rentals per hour). 10 inputs: hour, weekday, month, weather type (one-hot); year, working day, holiday; temperature, humidity, wind speed (standardized). No rows dropped. Dropped columns: casual and registered (sum to cnt: leakage), instant (ID), season and atemp (redundant).
+
+## Split
+Chronological by whole day, no shuffling: train 438 days (to 2012-03-13), validation 146 (to 2012-08-06), test 147 (to 2012-12-31). Tuning: forward-chaining 4-fold CV inside train (each fold fits on earlier days, scores the next 73). Encoders and scaler are fit on fitting data only. Only the bootstrap is random (seed 0). Validation, unused in tuning, scores the baseline. Test is reserved for the end, but was already scored on Oct 16 (before feedback) and Nov 8 (wider grid); nothing was tuned on it, and the paper reports both runs.
+
+## Baseline
+OLS (no tuning parameter). Compared method: kNN (Euclidean, uniform weights), grid k in {1, 2, 3, 5, 10, 15, 30, 60, 100}; CV chose k = 3 (mean CV RMSE 98.9).
+
+## Result
+Validation RMSE (rentals per hour), fit on all training days, [95% interval]:
+- OLS: 139.2 [134.1, 144.2]; weekday rush 210.9 [196.2, 225.5]
+- kNN, k = 3: 153.0 [145.2, 161.3]; rush 250.9 [236.1, 266.9]
+- Rush difference, kNN - OLS: +39.9 [+30.5, +49.4]
+- OLS + hour x working day: 114.1; rush 173.4
+- Hour x working-day mean (reference): 169.9; rush 264.9
+Paired circular block bootstrap over validation days (7-day blocks, 2,000 resamples). Rush: working days, 07-09h and 16-19h.
+
+## Issues found
+- 165 hours have no row (mostly 01-05h; Hurricane Sandy). cnt is never 0, so a gap may mean zero rentals or an outage. Not imputed.
+- Humidity = 0 on 22 rows and wind speed = 0 on 12.5% of rows; kept as is.
+- Demand grew 121% from early 2011 to early 2012; OLS follows it through year, kNN cannot extrapolate.
+- The best k shifts with season (3 to 5 across CV folds; 1 on validation).
+- kNN distance is dominated by 47 one-hot columns.
+
+## Next steps
+Before Monday 16 November:
+- Jinge: treat humidity and wind-speed zeros as missing (validation only); data section.
+- Yujie: down-weight one-hot columns in the kNN distance (CV); calendar-only ablation.
+- Shuo: rush-hour error analysis, figures, bootstrap block-length check; draft. Final test run after the analysis is frozen.
+
+## Code
+https://github.com/AidenLyu/ese5420-bike-demand (bike.py, run.py; "python run.py" reproduces this result).
