@@ -12,6 +12,12 @@
 | holidays | 13 | 3 | 5 |
 | rush rows | 2085 | 707 | 690 |
 | rain/snow rows (weathersit≥3) | 934 | 250 | 238 |
+| days with missing hours | 68 | 2 | 6 |
+| heavy rain/snow rows (weathersit=4) | 3 | 0 | 0 |
+| hum = 0 rows | 22 | 0 | 0 |
+| windspeed = 0 rows | 1263 | 375 | 542 |
+
+Missing hours by hour of day (top 6): {3: 34, 4: 34, 2: 16, 5: 14, 1: 7, 6: 6}. Fewest recorded hours: {'2012-10-29': 1, '2011-01-27': 8, '2012-10-30': 11, '2011-01-18': 12}. hum = 0 on: ['2011-03-10']. Nothing is dropped or imputed; metrics use the recorded hours.
 
 Training data, Jan 1–Mar 13 window: mean cnt 2011 = 66.8, 2012 = 147.9 (+121%).
 

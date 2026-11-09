@@ -120,7 +120,15 @@ checks = pd.DataFrame({n: {
     "first day": f"{s.dteday.min():%Y-%m-%d}", "last day": f"{s.dteday.max():%Y-%m-%d}", "days": s.dteday.nunique(),
     "rows": len(s), "missing hours": 24 * s.dteday.nunique() - len(s), "holidays": s.groupby("dteday").holiday.first().sum(),
     "rush rows": bike.rush_mask(s).sum(), "rain/snow rows (weathersit≥3)": (s.weathersit >= 3).sum(),
+    "days with missing hours": (s.groupby("dteday").size() < 24).sum(), "heavy rain/snow rows (weathersit=4)": (s.weathersit == 4).sum(),
+    "hum = 0 rows": (s.hum == 0).sum(), "windspeed = 0 rows": (s.windspeed == 0).sum(),
 } for n, s in splits.items()})
+per_day = df.groupby("dteday").size()
+gaps = pd.MultiIndex.from_product([per_day.index, range(24)]).difference(pd.MultiIndex.from_frame(df[["dteday", "hr"]]))
+gap_note = (f"Missing hours by hour of day (top 6): {pd.Series(gaps.get_level_values(1)).value_counts().head(6).to_dict()}. "
+            f"Fewest recorded hours: {({f'{d:%Y-%m-%d}': n for d, n in per_day.nsmallest(4).items()})}. "
+            f"hum = 0 on: {[f'{d:%Y-%m-%d}' for d in df.loc[df.hum == 0, 'dteday'].unique()]}. "
+            "Nothing is dropped or imputed; metrics use the recorded hours.")
 growth = tr[tr.dteday.dt.strftime("%m%d") <= "0313"].groupby("yr")[Y].mean()  # same calendar window, both years in train
 
 prof = tr.groupby(["workingday", "hr"])[Y].describe()
@@ -219,7 +227,7 @@ wide.columns = [f"{s} {m}" for m, s in wide.columns]
 wide = wide[["train rmse", "val rmse", "train rush_rmse", "val rush_rmse", "val bias", "val rush_bias"]]
 val_md = "\n\n".join([
     "# Validation stage (k tuned by time-ordered CV inside train; models fit on train, scored on val)",
-    "## Data checks", md(checks),
+    "## Data checks", md(checks), gap_note,
     f"Training data, Jan 1–Mar 13 window: mean cnt 2011 = {growth[0]:.1f}, 2012 = {growth[1]:.1f} ({growth[1] / growth[0] - 1:+.0%}).",
     "## Time-ordered 4-fold CV inside the training days (each fold fits on all earlier training days, scores the next 73)",
     "### RMSE", md(cv_tab["rmse"]), "### Rush-hour RMSE", md(cv_tab["rush_rmse"]),

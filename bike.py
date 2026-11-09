@@ -69,6 +69,9 @@ if __name__ == "__main__":
     df = load()
     assert len(df) == 17379 and not df.isna().any().any() and not df.duplicated(["dteday", "hr"]).any()
     assert (df.casual + df.registered == df.cnt).all()
+    d = df.dteday.dt  # calendar columns agree with the date; workingday = Mon-Fri and not a holiday
+    assert ((d.dayofweek + 1) % 7 == df.weekday).all() and (d.year - 2011 == df.yr).all() and (d.month == df.mnth).all()
+    assert (df.workingday == (df.weekday.between(1, 5) & (df.holiday == 0))).all()
     used = {c for flag in (False, True) for cols in features(interact=flag) for c in cols}
     assert not used & {"instant", "casual", "registered", TARGET}
     tr, va, te = split_by_day(df)
@@ -77,5 +80,7 @@ if __name__ == "__main__":
     n = [s.dteday.nunique() for s in (tr, va, te)]
     assert abs(n[0] / sum(n) - 0.6) < 0.01, n
     assert rush_mask(va).sum() > 0
+    from sklearn.linear_model import LinearRegression  # scaler statistics come from the fitting data only
+    assert np.allclose(make_pipeline(LinearRegression()).fit(tr, tr[TARGET])["pre"].named_transformers_["num"].mean_, tr[CONTINUOUS].mean())
     print("days train/val/test:", n, "| ranges:", [f"{s.dteday.min():%Y-%m-%d}..{s.dteday.max():%Y-%m-%d}" for s in (tr, va, te)])
     print("baseline val:", {k: round(v, 1) for k, v in evaluate(va[TARGET], baseline(tr, va), va).items()})

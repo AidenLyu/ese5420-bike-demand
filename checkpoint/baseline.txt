@@ -28,7 +28,7 @@ Paired circular block bootstrap over validation days (7-day blocks, 2,000 resamp
 - 165 hours have no row (mostly 01-05h; Hurricane Sandy). cnt is never 0, so a gap may mean zero rentals or an outage. Not imputed.
 - Humidity = 0 on 22 rows and wind speed = 0 on 12.5% of rows; kept as is.
 - Demand grew 121% from early 2011 to early 2012; OLS follows it through year, kNN cannot extrapolate.
-- The best k shifts with season (3 to 5 across CV folds; 1 on validation).
+- Validation is spring-summer 2012; test is Aug-Dec 2012, a busier, different season. The best k shifts with season (3 to 5 across CV folds, which include autumn 2011; 1 on validation).
 - kNN distance is dominated by 47 one-hot columns.
 
 ## Next steps
